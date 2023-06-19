@@ -1,0 +1,10 @@
+[package]
+name = "haze_reboot"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+debug_parser = "0.1.4"
+typed-arena = "2.0.2"

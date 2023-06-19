@@ -1,0 +1,50 @@
+Item = FnDecl
+
+Statement = Item
+            | VarDecl
+            | ExprStmt
+            | ';' ;
+
+FnDecl = "fn" ident '(' FnParams ')' BlockStmt ;
+FnParams = ident (',' ident)* ','? ;
+
+VarDecl = "let" ident ( "=" Expr )? ";" ;
+
+ExprStmt = ExprMaybeSemi ';'? | ExprSemi ';' ;
+
+
+Expr = ExprMaybeSemi | ExprSemi ;
+
+# Expressions that are optionally terminated by a semicolon to form an expression statement
+ExprMaybeSemi = IfExpr
+                | WhileExpr
+                | BlockExpr ;
+
+# Expressions that must be terminated by a semicolon to form an expression statement
+ExprSemi = ident 
+            | string
+            | bool
+            | number
+            | InfixExpr
+            | PrefixExpr
+            | GroupExpr 
+            | ReturnExpr ;
+
+InfixExpr = Expr BinOp Expr ;
+# Precedence is handled internally
+BinOp = '+' | '-' | '/' | '*' | '==' | '>' | '>=' | '<' | '<=' | '!=' | '=' | '.';
+
+PrefixExpr = UnaryOp Expr ;
+UnaryOp = '-' | '!' ;
+
+GroupExpr = '(' Expr? ')' ;
+
+IfExpr = "if" Expr BlockExpr ( "else"? ( IfExpr | BlockExpr ) )? ;
+WhileExpr = "while" Expr BlockExpr ;
+ReturnExpr = "return" Expr? ;
+
+# Blocks.
+# In Haze, block statements and expressions are not syntatically different but are differentiated 
+# when used in non-expression constructs(See "FnDecl")
+BlockStmt = BlockExpr ;
+BlockExpr = '{' Statement* '}' ;
