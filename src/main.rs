@@ -23,5 +23,3 @@ fn main() {
 
     // println!("{:#?}", preparsed.parse().unwrap());
 }
-
-fn g(x: i32 ) }

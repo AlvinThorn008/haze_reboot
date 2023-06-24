@@ -44,27 +44,27 @@ pub fn tag_is_literal(tag: Tag) -> bool {
 
 #[derive(Debug, Clone)]
 pub enum Node {
-    VarDecl(VarDecl),
-    FuncDecl(FuncDecl),
+    VarDecl(Box<VarDecl>),
+    FuncDecl(Box<FuncDecl>),
     BlockStmt(BlockStmt),
-    Expr(ExprStmt),
-    EmptyStmt(EmptyStmt),
+    ExprStmt(ExprStmt),
+    Empty(EmptyStmt),
 
     Id(Ident),
     Str(Str),
     Bool(Bool),
     Int(Int),
-    Infix(Infix),
-    Prefix(Prefix),
-    Group(Group),
-    BlockExpr(BlockExpr),
-    If(IfExpr),
-    While(WhileExpr),
-    Return(ReturnExpr),
-    Assign(AssignExpr),
-    Call(CallExpr),
-    Array(ArrayExpr),
-    Break(BreakExpr),
+    Infix(Box<Infix>),
+    Prefix(Box<Prefix>),
+    Group(Box<Group>),
+    Block(BlockExpr),
+    If(Box<IfExpr>),
+    While(Box<WhileExpr>),
+    Return(Box<ReturnExpr>),
+    Assign(Box<AssignExpr>),
+    Call(Box<CallExpr>),
+    Array(Box<ArrayExpr>),
+    Break(Box<BreakExpr>),
     
     ParamList(Box<Ident>),
 
@@ -73,8 +73,8 @@ pub enum Node {
 
 #[derive(Debug, Clone)]
 pub enum Stmt {
-    VarDecl(VarDecl),
-    FuncDecl(FuncDecl),
+    VarDecl(Box<VarDecl>),
+    FuncDecl(Box<FuncDecl>),
     Block(BlockStmt),
     Expr(ExprStmt),
     Empty(EmptyStmt),
@@ -109,17 +109,17 @@ impl From<Expr> for Node {
             Str(inner) => Self::Str(inner),
             Bool(inner) => Self::Bool(inner),
             Int(inner) => Self::Int(inner),
-            Infix(inner) => Self::Infix(*inner),
-            Prefix(inner) => Self::Prefix(*inner),
-            Group(inner) => Self::Group(*inner),
-            Block(inner) => Self::BlockExpr(inner),
-            If(inner) => Self::If(*inner),
-            While(inner) => Self::While(*inner),
-            Return(inner) => Self::Return(*inner),
-            Assign(inner) => Self::Assign(*inner),
-            Call(inner) => Self::Call(*inner),
-            Array(inner) => Self::Array(*inner),
-            Break(inner) => Self::Break(*inner),
+            Infix(inner) => Self::Infix(inner),
+            Prefix(inner) => Self::Prefix(inner),
+            Group(inner) => Self::Group(inner),
+            Block(inner) => Self::Block(inner),
+            If(inner) => Self::If(inner),
+            While(inner) => Self::While(inner),
+            Return(inner) => Self::Return(inner),
+            Assign(inner) => Self::Assign(inner),
+            Call(inner) => Self::Call(inner),
+            Array(inner) => Self::Array(inner),
+            Break(inner) => Self::Break(inner),
             Null => Self::Null
         }
     }
@@ -132,8 +132,8 @@ impl From<Stmt> for Node {
             VarDecl(inner) => Self::VarDecl(inner),
             FuncDecl(inner) => Self::FuncDecl(inner),
             Block(inner) => Self::BlockStmt(inner),
-            Expr(inner) => Self::Expr(inner),
-            Empty(inner) => Self::EmptyStmt(inner),
+            Expr(inner) => Self::ExprStmt(inner),
+            Empty(inner) => Self::Empty(inner),
             Null => Self::Null
         }
     }

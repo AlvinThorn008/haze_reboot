@@ -77,7 +77,7 @@ impl<'a> Parser<'a> {
         }
     } */
 
-    fn parse_func_decl(&mut self) -> Result<FuncDecl, &'static str> {
+    fn parse_func_decl(&mut self) -> Result<Box<FuncDecl>, &'static str> {
         let _ = self.next().expect("self.tokens shouldn't be consumed"); // consume`fn` keyword
         let name = self
             .eat_token(Tag::Ident)
@@ -89,11 +89,11 @@ impl<'a> Parser<'a> {
         // Early return for functions without parameters
         match self.eat_token(Tag::RParen) {
             Some(_) => {
-                return Ok(FuncDecl {
+                return Ok(Box::new(FuncDecl {
                     name,
                     params: params.into_boxed_slice(),
                     body: self.parse_block_stmt()?,
-                })
+                }))
             }
             None => {}
         };
@@ -119,14 +119,14 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Ok(FuncDecl {
+        Ok(Box::new(FuncDecl {
             name,
             params: params.into_boxed_slice(),
             body: self.parse_block_stmt()?,
-        })
+        }))
     }
 
-    fn parse_var_decl(&mut self) -> Result<VarDecl, &'static str> {
+    fn parse_var_decl(&mut self) -> Result<Box<VarDecl>, &'static str> {
         let _ = self.next().expect("self.tokens shouldn't be consumed"); // consume let keyword
         let name = self
             .eat_token(Tag::Ident)
@@ -139,7 +139,7 @@ impl<'a> Parser<'a> {
             }
             Some(tok) if tok.tag == Tag::Semicolon => {
                 self.next();
-                return Ok(VarDecl { name, value: None }); // uninitialized var decl
+                return Ok(Box::new(VarDecl { name, value: None })); // uninitialized var decl
             }
             _ => return Err("Unexpected token"),
         };
@@ -148,7 +148,7 @@ impl<'a> Parser<'a> {
 
         self.eat_token(Tag::Semicolon).ok_or("Expected `;`")?;
 
-        Ok(VarDecl { name, value })
+        Ok(Box::new(VarDecl { name, value }))
     }
 
     fn parse_expr_stmt(&mut self) -> Result<ExprStmt, &'static str> {
@@ -177,7 +177,7 @@ impl<'a> Parser<'a> {
                     self.next();
                     break;
                 }
-                tok => {
+                Some(_) => {
                     stmts.push(self.parse_statement()?);
                 }
                 None => return Err("RBrace not found"),
@@ -191,7 +191,7 @@ impl<'a> Parser<'a> {
         self.parse_expr_bp(0)
     }
 
-    fn parse_if_expr(&mut self) -> Result<IfExpr, &'static str> {
+    fn parse_if_expr(&mut self) -> Result<Box<IfExpr>, &'static str> {
         let _ = self.next().expect("self.tokens shouldn't be consumed"); // if keyword
         let condition = self.parse_expr()?;
         let consequence = self.parse_block_expr()?;
@@ -203,18 +203,18 @@ impl<'a> Parser<'a> {
                 self.next();
             }
             _ => {
-                return Ok(IfExpr {
+                return Ok(Box::new(IfExpr {
                     condition,
                     consequence,
                     alternate,
-                })
+                }))
             }
         };
 
         match self.peek() {
             Some(tok) if tok.tag == Tag::If => {
                 // Parse else if
-                alternate = IfAlt::ElseIf(Box::new(self.parse_if_expr()?));
+                alternate = IfAlt::ElseIf(self.parse_if_expr()?);
             }
             Some(tok) if tok.tag == Tag::LBrace => {
                 // Parse else block
@@ -223,48 +223,48 @@ impl<'a> Parser<'a> {
             _ => return Err("Abort!!! brace missing - ifs lost"),
         };
 
-        Ok(IfExpr {
+        Ok(Box::new(IfExpr {
             condition,
             consequence,
             alternate,
-        })
+        }))
     }
 
-    fn parse_while_expr(&mut self) -> Result<WhileExpr, &'static str> {
+    fn parse_while_expr(&mut self) -> Result<Box<WhileExpr>, &'static str> {
         let _ = self.next().expect("self.tokens shouldn't be consumed");
         let condition = self.parse_expr()?;
         let consequence = self.parse_block_expr()?;
 
-        Ok(WhileExpr {
+        Ok(Box::new(WhileExpr {
             condition,
             consequence,
-        })
+        }))
     }
 
-    fn parse_return_expr(&mut self) -> Result<ReturnExpr, &'static str> {
+    fn parse_return_expr(&mut self) -> Result<Box<ReturnExpr>, &'static str> {
         let _ = self.next().expect("self.tokens shouldn't be consumed"); // consume return keyword
 
         match self.peek() {
             Some(tok) if matches!(tok.tag, Tag::Semicolon | Tag::RBrace) => {
-                Ok(ReturnExpr { value: None })
+                Ok(Box::new(ReturnExpr { value: None }))
             }
-            Some(tok) => Ok(ReturnExpr {
+            Some(_) => Ok(Box::new(ReturnExpr {
                 value: Some(self.parse_expr()?),
-            }),
+            })),
             None => Err("Expected `:`, `}` or an operator"),
         }
     }
 
-    fn parse_break_expr(&mut self) -> Result<BreakExpr, &'static str> {
+    fn parse_break_expr(&mut self) -> Result<Box<BreakExpr>, &'static str> {
         let _ = self.next().expect("self.tokens shouldn't be consumed"); // consume return keyword
 
         match self.peek() {
             Some(tok) if matches!(tok.tag, Tag::Semicolon | Tag::RBrace) => {
-                Ok(BreakExpr { value: None })
+                Ok(Box::new(BreakExpr { value: None }))
             }
-            Some(_) => Ok(BreakExpr {
+            Some(_) => Ok(Box::new(BreakExpr {
                 value: Some(self.parse_expr()?),
-            }),
+            })),
             None => Err("Expected `:`, `}` or an operator"),
         }
     }
@@ -329,8 +329,8 @@ impl<'a> Parser<'a> {
                 self.next(); // ident
                 let next_tok = if let Some(tok) = self.peek() { tok } else { return Ok(Expr::Id(Ident(tok))); };
                 match next_tok.tag {
-                    Tag::Equal => self.consume_assignment(tok),
-                    Tag::LParen => self.consume_call_expr(tok),
+                    Tag::Equal => self.consume_assignment(tok).map(Expr::Assign),
+                    Tag::LParen => self.consume_call_expr(tok).map(Expr::Call),
                     _ => Ok(Expr::Id(Ident(tok)))
                 }
             },
@@ -353,27 +353,27 @@ impl<'a> Parser<'a> {
                     .ok_or("Missing closing parenthesis")?;
                 Ok(Expr::Group(Box::new(Group(lhs))))
             }
-            Tag::LBracket => self.consume_array_expr(),
-            Tag::If => Ok(Expr::If(Box::new(self.parse_if_expr()?))),
-            Tag::While => Ok(Expr::While(Box::new(self.parse_while_expr()?))),
-            Tag::Return => Ok(Expr::Return(Box::new(self.parse_return_expr()?))),
+            Tag::LBracket => self.consume_array_expr().map(Expr::Array),
+            Tag::If => Ok(Expr::If(self.parse_if_expr()?)),
+            Tag::While => Ok(Expr::While(self.parse_while_expr()?)),
+            Tag::Return => Ok(Expr::Return(self.parse_return_expr()?)),
             Tag::LBrace => Ok(Expr::Block(self.parse_block_expr()?)),
-            Tag::Break => Ok(Expr::Break(Box::new(self.parse_break_expr()?))),
+            Tag::Break => Ok(Expr::Break(self.parse_break_expr()?)),
             _ => {
                 return Err("Expected expression")
             }
         }
     }
 
-    fn consume_assignment(&mut self, tok: Token) -> Result<Expr, &'static str> {
+    fn consume_assignment(&mut self, tok: Token) -> Result<Box<AssignExpr>, &'static str> {
         self.next();
-        Ok(Expr::Assign(Box::new(AssignExpr { 
+        Ok(Box::new(AssignExpr { 
             ident: Ident(tok), 
             value: self.parse_expr()? 
-        })))
+        }))
     }
 
-    fn consume_call_expr(&mut self, tok: Token) -> Result<Expr, &'static str> {
+    fn consume_call_expr(&mut self, tok: Token) -> Result<Box<CallExpr>, &'static str> {
         self.next(); // LParen
         let mut args = Vec::new();
 
@@ -396,13 +396,13 @@ impl<'a> Parser<'a> {
                 _ => {}
             }
         }
-        Ok(Expr::Call(Box::new(CallExpr { 
+        Ok(Box::new(CallExpr { 
             name: Ident(tok), 
             args: args.into_boxed_slice()
-        })))
+        }))
     }
 
-    fn consume_array_expr(&mut self) -> Result<Expr, &'static str> {
+    fn consume_array_expr(&mut self) -> Result<Box<ArrayExpr>, &'static str> {
         self.next(); // LParen
         let mut items = Vec::new();
 
@@ -425,9 +425,9 @@ impl<'a> Parser<'a> {
                 _ => {}
             }
         }
-        Ok(Expr::Array(Box::new(ArrayExpr { 
+        Ok(Box::new(ArrayExpr { 
             items: items.into_boxed_slice()
-        })))
+        }))
     }
 
     pub fn lazy_eat(&mut self, tag: Tag) {
