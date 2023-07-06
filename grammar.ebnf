@@ -1,7 +1,6 @@
-Item = FnDecl
+# Item = FnDecl
 
-Statement = Item
-            | VarDecl
+Statement = VarDecl
             | ExprStmt
             | ';' ;
 
@@ -39,7 +38,12 @@ UnaryOp = '-' | '!' ;
 
 GroupExpr = '(' Expr? ')' ;
 
-IfExpr = "if" Expr BlockExpr ( "else"? ( IfExpr | BlockExpr ) )? ;
+# If expressions might require an else branch because
+# both branches need to return some value. 
+
+# Alternatively, for functions, if expressions
+
+IfExpr = "if" Expr BlockExpr ( "else" ( IfExpr | BlockExpr ) )? ;
 WhileExpr = "while" Expr BlockExpr ;
 ReturnExpr = "return" Expr? ;
 

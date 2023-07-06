@@ -1,6 +1,4 @@
-use core::fmt;
-
-use crate::{token::{Tag, Token}, lexer::Lexer};
+use crate::{token::{Tag, Token}};
 // use std::convert::From;
 
 pub fn tag_is_binop(tag: Tag) -> bool {
@@ -43,9 +41,9 @@ pub fn tag_is_literal(tag: Tag) -> bool {
 // }
 
 #[derive(Debug, Clone)]
-pub enum Node {
-    VarDecl(Box<VarDecl>),
-    FuncDecl(Box<FuncDecl>),
+pub enum Node<'ast> {
+    VarDecl(&'ast VarDecl),
+    FuncDecl(&'ast FuncDecl),
     BlockStmt(BlockStmt),
     ExprStmt(ExprStmt),
     Empty(EmptyStmt),
@@ -54,19 +52,19 @@ pub enum Node {
     Str(Str),
     Bool(Bool),
     Int(Int),
-    Infix(Box<Infix>),
-    Prefix(Box<Prefix>),
-    Group(Box<Group>),
+    Infix(&'ast Infix),
+    Prefix(&'ast Prefix),
+    Group(&'ast Group),
     Block(BlockExpr),
-    If(Box<IfExpr>),
-    While(Box<WhileExpr>),
-    Return(Box<ReturnExpr>),
-    Assign(Box<AssignExpr>),
-    Call(Box<CallExpr>),
-    Array(Box<ArrayExpr>),
-    Break(Box<BreakExpr>),
+    If(&'ast IfExpr),
+    While(&'ast WhileExpr),
+    Return(&'ast ReturnExpr),
+    Assign(&'ast AssignExpr),
+    Call(&'ast CallExpr),
+    Array(&'ast ArrayExpr),
+    Break(&'ast BreakExpr),
     
-    ParamList(Box<Ident>),
+    ParamList(&'ast [Ident]),
 
     Null
 }
@@ -101,47 +99,47 @@ pub enum Expr {
     Null
 }
 
-impl From<Expr> for Node {
-    fn from(expr: Expr) -> Self {
+impl<'ast> From<&'ast Expr> for Node<'ast> {
+    fn from(expr: &'ast Expr) -> Self {
         use Expr::*;
         match expr {
-            Id(inner) => Self::Id(inner),
-            Str(inner) => Self::Str(inner),
-            Bool(inner) => Self::Bool(inner),
-            Int(inner) => Self::Int(inner),
-            Infix(inner) => Self::Infix(inner),
-            Prefix(inner) => Self::Prefix(inner),
-            Group(inner) => Self::Group(inner),
-            Block(inner) => Self::Block(inner),
-            If(inner) => Self::If(inner),
-            While(inner) => Self::While(inner),
-            Return(inner) => Self::Return(inner),
-            Assign(inner) => Self::Assign(inner),
-            Call(inner) => Self::Call(inner),
-            Array(inner) => Self::Array(inner),
-            Break(inner) => Self::Break(inner),
+            Id(inner) => Self::Id(inner.clone()),
+            Str(inner) => Self::Str(inner.clone()),
+            Bool(inner) => Self::Bool(inner.clone()),
+            Int(inner) => Self::Int(inner.clone()),
+            Infix(inner) => Self::Infix(inner.as_ref()),
+            Prefix(inner) => Self::Prefix(inner.as_ref()),
+            Group(inner) => Self::Group(inner.as_ref()),
+            Block(inner) => Self::Block(inner.clone()),
+            If(inner) => Self::If(inner.as_ref()),
+            While(inner) => Self::While(inner.as_ref()),
+            Return(inner) => Self::Return(inner.as_ref()),
+            Assign(inner) => Self::Assign(inner.as_ref()),
+            Call(inner) => Self::Call(inner.as_ref()),
+            Array(inner) => Self::Array(inner.as_ref()),
+            Break(inner) => Self::Break(inner.as_ref()),
             Null => Self::Null
         }
     }
 }
 
-impl From<Stmt> for Node {
-    fn from(stmt: Stmt) -> Self {
+impl<'ast> From<&'ast Stmt> for Node<'ast> {
+    fn from(stmt: &'ast Stmt) -> Self {
         use Stmt::*;
         match stmt {
-            VarDecl(inner) => Self::VarDecl(inner),
-            FuncDecl(inner) => Self::FuncDecl(inner),
-            Block(inner) => Self::BlockStmt(inner),
-            Expr(inner) => Self::ExprStmt(inner),
-            Empty(inner) => Self::Empty(inner),
+            VarDecl(inner) => Self::VarDecl(inner.as_ref()),
+            FuncDecl(inner) => Self::FuncDecl(inner.as_ref()),
+            Block(inner) => Self::BlockStmt(inner.clone()),
+            Expr(inner) => Self::ExprStmt(inner.clone()),
+            Empty(inner) => Self::Empty(inner.clone()),
             Null => Self::Null
         }
     }
 }
 
-impl From<Option<Expr>> for Node { 
-    fn from(value: Option<Expr>) -> Self {
-        value.map_or(Node::Null, |x| Node::from(x))
+impl<'ast> From<Option<&'ast Expr>> for Node<'ast> { 
+    fn from(value: Option<&'ast Expr>) -> Self {
+        value.map_or(Node::Null, Node::from)
     } 
 }
 

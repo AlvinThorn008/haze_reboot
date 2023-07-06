@@ -1,10 +1,10 @@
 let PI = 3.14;
 
-fn area_circle(radius) {
+fn area_circle(radiuseseseseseses) {
     return PI * radius * radius;
 }
 
-let radius = int(input("What is the radius"));
+let radius = int(input("What is the rad"));
 print(area_circle(radius));
 
 let students = [];
